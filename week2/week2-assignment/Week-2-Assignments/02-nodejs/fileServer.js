@@ -21,5 +21,48 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 
+// Function to get a bunch of files
+function get_files(req, res) {
+  const pathname = path.join(__dirname, 'files');
+  fs.readdir(pathname, function (err, files) {
+    if (err) {
+      res.status(500).send("Invalid");
+    }
+    else {
+      res.status(200).send(files);
+    }
+  });
+}
+
+// Function to read a file
+function read_file(req, res) {
+  const filename = req.params.filename;
+  console.log(filename);
+  const filepath = path.join(__dirname, 'files', filename)
+  console.log(filepath);
+  fs.readFile(filepath, "utf-8", function(err, data) {
+
+    if (err) {
+      res.status(404).send("File not found");
+    }
+
+    else {
+      res.status(200).send(data);
+    }
+
+  });
+}
+
+// Route for getting the files
+app.get("/files", get_files);
+
+// Route to get the content of individual files
+app.get("/file/:filename", read_file);
+
+// Any other route, gracefully return an error saying not found
+app.get("/:any", function(req, res){
+  res.status(404).send("Route not found")
+})
+
 
 module.exports = app;
