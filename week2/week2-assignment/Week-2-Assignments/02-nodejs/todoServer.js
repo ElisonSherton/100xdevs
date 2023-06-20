@@ -41,9 +41,92 @@
  */
 const express = require('express');
 const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
+
 
 const app = express();
 
 app.use(bodyParser.json());
+
+var list_of_todos = new Map();
+
+// Helper function which converts a map into a list
+function map_to_array(){
+  var list_of_items = [];
+  for (let [key, value] of list_of_todos) {
+    list_of_items.push(value);
+  }
+  return list_of_items;
+}
+
+// Handler for the get route, gets all the items in the todolist
+function get_todos(req, res){
+  res.status(200).send(map_to_array());
+}
+
+// Hanlder for get individual todo route, given an ID, get the todos
+function get_individual_todo(req, res){
+  const req_id = req.params.id;
+
+  // Search for the id in the list of todos
+  if (list_of_todos.has(req_id)){
+    res.status(200).send(list_of_todos.get(req_id))
+  }
+
+  res.status(404).send("Not Found");
+}
+
+// Handler for creating a todo item
+function create_todo(req, res){
+  var req_body = req.body;
+  const req_id = uuidv4();
+  req_body.id = req_id;
+  list_of_todos.set(req_id, req_body);
+  res.status(201).send({id: req_id});
+}
+
+// Handler to update a todo item
+function update_todo_item(req, res) {
+
+  const req_id = req.params.id;
+  const new_body = req.body;
+
+  // Search for the id in the list of todos
+  if (list_of_todos.has(req_id)) {
+    new_body.id = req_id
+    list_of_todos[req_id] = new_body;
+    res.status(200).send("Updated")
+  }
+  else {
+    res.status(404).send("Not Found");
+  }
+}
+
+// Handler to delet a todoitem from the list
+function delete_todo_item(req, res) {
+
+  const req_id = req.params.id;
+
+  // Search for the id in the list of todos
+  if (list_of_todos.has(req_id)) {
+    list_of_todos.delete(req_id);
+    res.status(200).send("Deleted")
+  }
+  else {
+    res.status(404).send("Not Found");
+  }
+}
+
+// Register the handlers with the routes
+app.get("/todos", get_todos)
+app.get("/todos/:id", get_individual_todo)
+app.post("/todos", create_todo)
+app.put("/todos/:id", update_todo_item)
+app.delete("/todos/:id", delete_todo_item)
+
+// Maintain this route to handle any non-existent route
+app.get("/:any", function(req, res){
+  res.status(404).send("Route does not exist")
+})
 
 module.exports = app;
