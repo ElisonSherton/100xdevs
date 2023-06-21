@@ -42,13 +42,28 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const todo_list_path = './files/data.json'
 
+// Import the data from the previously saved session/database
+// Cast the entries into a map with the help of converting the 
+// imported data into json object
+var list_of_todos = require(todo_list_path)
+list_of_todos = new Map(Object.entries(JSON.parse(JSON.stringify(list_of_todos))));
 
 const app = express();
 
 app.use(bodyParser.json());
 
-var list_of_todos = new Map();
+function write_to_disk(err){
+  if (err) {
+    console.log(err)
+  } 
+};
+
+// Earlier, we used to define a list of todos afresh, now
+// We have already loaded it from our database i.e. file from above
+// var list_of_todos = new Map();
 
 // Helper function which converts a map into a list
 function map_to_array(){
@@ -82,6 +97,10 @@ function create_todo(req, res){
   const req_id = uuidv4();
   req_body.id = req_id;
   list_of_todos.set(req_id, req_body);
+  
+  // Log this change to the local file system to persist the change
+  fs.writeFile(todo_list_path, JSON.stringify(list_of_todos), write_to_disk)
+
   res.status(201).send({id: req_id});
 }
 
@@ -95,6 +114,10 @@ function update_todo_item(req, res) {
   if (list_of_todos.has(req_id)) {
     new_body.id = req_id
     list_of_todos[req_id] = new_body;
+
+    // Log this change to the local file system to persist the change
+    fs.writeFile(todo_list_path, JSON.stringify(list_of_todos), write_to_disk)
+
     res.status(200).send("Updated")
   }
   else {
@@ -110,6 +133,10 @@ function delete_todo_item(req, res) {
   // Search for the id in the list of todos
   if (list_of_todos.has(req_id)) {
     list_of_todos.delete(req_id);
+
+    // Log this change to the local file system to persist the change
+    fs.writeFile(todo_list_path, JSON.stringify(list_of_todos), write_to_disk)
+
     res.status(200).send("Deleted")
   }
   else {
